@@ -1,0 +1,16 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# secrets: keep real keys out of the repo (.env.example is the template)
+.env
+.env.*
+!.env.example
+
+# build cache
+*.tsbuildinfo
+
+# design references and photo originals used only to generate public/images
+# (never shipped; keep them local)
+referenceImage/

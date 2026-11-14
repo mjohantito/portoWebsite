@@ -1,0 +1,56 @@
+/* ==========================================================================
+   Quote
+   A quiet pause between sections, about a third of the viewport tall. Serif
+   italic (--font-quote) against the condensed hero type; reuse this
+   component's styles for future quotes.
+   ========================================================================== */
+
+.quote {
+  display: grid;
+  place-items: center;
+  min-height: 33svh;
+  padding: clamp(3rem, 8vh, 5rem) var(--space-edge);
+  background: var(--color-bg);
+}
+
+.quote__block {
+  max-width: 36rem;
+  margin: 0;
+  text-align: center;
+}
+
+.quote__text {
+  margin: 0;
+  font-family: var(--font-quote);
+  font-size: var(--text-quote);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--color-text);
+  text-wrap: balance;
+}
+
+/* each sentence starts on its own line, so the accent line always reads whole */
+.quote__sentence {
+  display: block;
+}
+
+.quote__sentence--accent {
+  color: var(--color-accent);
+}
+
+.quote__word {
+  display: inline-block;
+}
+
+.quote__footer {
+  margin-top: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.quote__footer cite {
+  font-style: normal;
+}

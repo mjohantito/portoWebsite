@@ -1,0 +1,36 @@
+/* Design tokens — colours, type, spacing. Single source of truth. */
+:root {
+  /* colour */
+  --color-bg: #050505;
+  --color-text: #ededed;
+  --color-muted: #8a8a8f;
+  --color-accent: #ffb547;
+  --color-error: #ff8f7d; /* form errors */
+  --color-grid: rgba(255, 255, 255, 0.06); /* resting grid strength */
+  /* painted line colour; the grid layer rests at 0.4 opacity = ~6% white */
+  --color-grid-draw: rgba(255, 255, 255, 0.15);
+  --color-hairline: rgba(255, 255, 255, 0.1);
+  --color-surface: #111113; /* cards */
+  --color-surface-border: rgba(255, 255, 255, 0.08);
+
+  /* type */
+  --font-display: 'Anton', 'Arial Narrow', 'Impact', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  /* pull quotes: serif italic, the counterpoint to the condensed display face */
+  --font-quote: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-xs: 0.6875rem; /* 11px — mono metadata */
+  --text-sm: 0.8125rem; /* 13px — nav */
+  --text-base: 0.9375rem; /* 15px — role line */
+  --text-display: clamp(4.5rem, 13.5vw, 13rem);
+  --text-quote: clamp(1.25rem, 2.4vw, 2rem);
+  --text-display-mobile: clamp(4.25rem, 21vw, 7rem);
+
+  /* layout */
+  --space-edge: clamp(1.25rem, 3vw, 3rem);
+  --grid-size: 72px;
+
+  /* motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}

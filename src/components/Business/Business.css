@@ -1,0 +1,674 @@
+/* ==========================================================================
+   My business
+   One full view: the active business's photo as a blurred, darkened backdrop,
+   and on top of it one wide card. The card has the business's details on the
+   left and its photos, sharp and in full colour, on the right. Cards sit in a
+   horizontal row (a carousel), with an empty slot after the last one.
+
+   The backdrop image arrives already blurred (scripts/generate-images.mjs), so
+   nothing here uses a blur filter except one small, static button glow.
+   Motion is transforms, opacity and clip-path only.
+
+   With reduced motion nothing is scripted: this file's resting state is the
+   final scene, and card changes are instant.
+   ========================================================================== */
+
+/* EJG brand typeface (local file; upright weights only) */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('/fontEJG/PlusJakartaSans-VariableFont_wght.ttf') format('truetype');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+.biz {
+  --ejg-text: #eeeae2;
+  --ejg-ink: #252525;
+  --accent: #f3d543; /* each card overrides this with its business's colour */
+
+  --logo-h: 44px;
+  --photo-gap: 10px;
+
+  /* side gutter of the card, and how much of the next card shows at the right
+     edge (negative: it starts that far past the edge). See .biz__track. */
+  --gutter: 1rem;
+  --peek: -1rem;
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: center;
+  overflow: clip;
+  min-height: 100svh;
+  padding-block: 4.5rem;
+  background: var(--color-bg);
+  color: var(--ejg-text);
+  font-family: 'Plus Jakarta Sans', var(--font-body);
+}
+
+.biz :focus-visible {
+  outline-color: var(--accent);
+}
+
+/* ---------- Background ---------- */
+
+.biz__bg {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* scaled up a little so its slow drift never shows an edge */
+.biz__bg-img {
+  position: absolute;
+  top: -7%;
+  left: -7%;
+  width: 114%;
+  max-width: none;
+  height: 114%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.1s ease;
+  animation: biz-drift 46s ease-in-out infinite alternate;
+}
+
+.biz__bg-img[data-active='true'] {
+  opacity: 1;
+}
+
+@keyframes biz-drift {
+  from {
+    transform: translate3d(-1.5%, 1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(1.5%, -1%, 0) scale(1.06);
+  }
+}
+
+/* loops stop while the section is offscreen or the tab is hidden */
+.biz[data-live='false'] .biz__bg-img {
+  animation-play-state: paused;
+}
+
+/* darkens the photo until text is safe, vignettes the corners, and dissolves
+   the top and bottom edges into the page */
+.biz__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      var(--color-bg) 0%,
+      transparent 16%,
+      transparent 84%,
+      var(--color-bg) 100%
+    ),
+    radial-gradient(
+      ellipse 75% 70% at 50% 50%,
+      rgba(5, 5, 5, 0.44) 0%,
+      rgba(5, 5, 5, 0.72) 62%,
+      rgba(5, 5, 5, 0.95) 100%
+    );
+}
+
+.biz__embers {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70%;
+  pointer-events: none;
+}
+
+/* ---------- Carousel ---------- */
+
+.biz__carousel {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: clamp(1rem, 2.6vh, 1.75rem);
+  min-width: 0;
+  border-radius: 20px;
+}
+
+.biz__carousel:focus-visible {
+  outline-offset: -4px;
+}
+
+.biz__viewport {
+  container-type: inline-size;
+  overflow: hidden;
+  /* sideways swipes are the carousel's; up and down stay with the page */
+  touch-action: pan-y;
+}
+
+/* The row is padded so card 0 starts centred; --index picks the card, --drag
+   follows the pointer. */
+.biz__track {
+  /* The card is as wide as the screen allows, up to 90rem, and never touches
+     the edges. */
+  --card-w: min(90rem, 100vw - 2 * var(--gutter));
+  --side: calc((100vw - var(--card-w)) / 2);
+  --card-gap: calc(var(--side) - var(--peek));
+
+  display: flex;
+  gap: var(--card-gap);
+  margin: 0;
+  padding: 0.5rem calc(50% - var(--card-w) / 2);
+  list-style: none;
+  transform: translate3d(
+    calc(var(--index) * -1 * (var(--card-w) + var(--card-gap)) + var(--drag, 0px)),
+    0,
+    0
+  );
+  transition: transform 0.8s var(--ease-out-expo);
+  cursor: grab;
+}
+
+/* 100vw counts a classic scrollbar; the carousel's own width does not */
+@supports (width: 1cqi) {
+  .biz__track {
+    --card-w: min(90rem, 100cqi - 2 * var(--gutter));
+    --side: calc((100cqi - var(--card-w)) / 2);
+  }
+}
+
+.biz__track.is-dragging {
+  transition: none;
+  cursor: grabbing;
+  user-select: none;
+}
+
+.biz__slide {
+  display: grid;
+  flex: 0 0 var(--card-w);
+  transition: opacity 0.6s ease;
+}
+
+.biz__slide[data-active='false'] {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+/* ---------- Card ----------
+   Small screens: photos on top, details below. Desktop (further down): details
+   left, photos right. */
+
+.biz__card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 20px;
+  background: rgba(13, 13, 15, 0.7);
+  cursor: auto;
+}
+
+.biz__info {
+  min-width: 0;
+  padding: 1.5rem 1.25rem 1.6rem;
+}
+
+.biz__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+/* The mark keeps clear space of half its height on every side (the card's
+   padding covers the left). */
+.biz__logo {
+  display: block;
+  width: max-content;
+  margin: calc(var(--logo-h) / 2) calc(var(--logo-h) / 2) calc(var(--logo-h) / 2) 0;
+  color: var(--ejg-text);
+}
+
+.biz__logo svg {
+  display: block;
+  width: auto;
+  height: var(--logo-h);
+}
+
+.biz__title {
+  margin: 0;
+  font-size: clamp(2rem, 9.5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  color: var(--ejg-text);
+}
+
+.biz__tagline {
+  margin: 0.7rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--ejg-text);
+}
+
+.biz__line {
+  max-width: 30rem;
+  margin: clamp(0.75rem, 2vh, 1.25rem) 0 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-muted);
+  text-wrap: pretty;
+}
+
+.biz__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem 2.5rem;
+  margin: clamp(1.1rem, 3vh, 1.9rem) 0 0;
+}
+
+.biz__fact dt {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-muted);
+}
+
+.biz__fact dd {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--ejg-text);
+}
+
+.biz__places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.biz__places li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.biz__places li::before {
+  content: '';
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ---------- Photos ----------
+   One large photo and up to three smaller ones. The layout follows how many
+   there are (data-count); the images never set the size of their tiles. */
+
+.biz__photos {
+  order: -1; /* small screens: above the details */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--photo-gap);
+  min-width: 0;
+  /* about 40% of the card */
+  height: clamp(15rem, 38svh, 20rem);
+  padding: var(--photo-gap) var(--photo-gap) 0;
+}
+
+.biz__photos[data-count='2'] {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+
+.biz__photos[data-count='3'] {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.biz__photos[data-count='4'] {
+  grid-template-columns: minmax(0, 2.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+/* the main photo takes the full height; with four, the second spans the top right */
+.biz__photos:is([data-count='3'], [data-count='4']) .biz__photo:first-child {
+  grid-row: 1 / 3;
+}
+
+.biz__photos[data-count='4'] .biz__photo:nth-child(2) {
+  grid-column: 2 / 4;
+}
+
+.biz__photo {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.biz__photo-zoom {
+  position: absolute;
+  inset: 0;
+}
+
+.biz__photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 0.45s ease;
+}
+
+@media (hover: hover) {
+  .biz__photo:hover img {
+    filter: brightness(1.12);
+  }
+}
+
+/* the main photo never quite holds still while the section is on screen */
+.biz__photo:first-child img {
+  animation: biz-photo-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes biz-photo-drift {
+  from {
+    transform: translate3d(-0.8%, 0.6%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(0.8%, -0.6%, 0) scale(1.07);
+  }
+}
+
+.biz[data-live='false'] .biz__photo img {
+  animation-play-state: paused;
+}
+
+/* no photos yet: dark blocks that say what goes there */
+.biz__photo--empty {
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--color-surface-border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* ---------- Buttons ----------
+   The main action, then the other two as a pair. All three share a row when
+   there is room; when there is not, the pair moves to its own row. */
+
+.biz__actions,
+.biz__actions-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.biz__actions {
+  margin-top: clamp(1.4rem, 3.6vh, 2.25rem);
+}
+
+.biz__actions-pair {
+  flex: 1 1 auto;
+}
+
+.biz__btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 48px;
+  padding: 0 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.biz__btn svg {
+  flex: none;
+}
+
+/* the main action: solid, with a glow that fades in (its blur never changes) */
+.biz__btn--primary {
+  background: var(--accent);
+  color: var(--ejg-ink);
+}
+
+.biz__btn--primary::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2px;
+  border-radius: inherit;
+  background: var(--accent);
+  filter: blur(16px);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.biz__btn--primary:hover::before,
+.biz__btn--primary:focus-visible::before {
+  opacity: 0.6;
+}
+
+.biz__btn--primary:focus-visible {
+  outline-color: var(--ejg-text);
+}
+
+.biz__btn--secondary {
+  border-color: rgba(238, 234, 226, 0.4);
+  color: var(--ejg-text);
+  transition: background-color 0.3s ease;
+}
+
+.biz__btn--secondary:hover,
+.biz__btn--secondary:focus-visible {
+  background: rgba(238, 234, 226, 0.1);
+}
+
+/* ---------- Empty slot ---------- */
+
+.biz__card--empty {
+  display: grid;
+  grid-template-columns: none;
+  place-content: center;
+  gap: 0.6rem;
+  min-height: 18rem;
+  border-style: dashed;
+  border-color: rgba(238, 234, 226, 0.14);
+  background: rgba(13, 13, 15, 0.5);
+  text-align: center;
+}
+
+.biz__empty-label,
+.biz__empty-note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.biz__empty-label {
+  text-transform: uppercase;
+  color: rgba(238, 234, 226, 0.7);
+}
+
+/* ---------- Controls: arrows + dots ---------- */
+
+.biz__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.biz__arrow {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid rgba(238, 234, 226, 0.22);
+  border-radius: 50%;
+  background: rgba(13, 13, 15, 0.5);
+  color: var(--ejg-text);
+  cursor: pointer;
+  transition:
+    border-color 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.biz__arrow:hover:not([aria-disabled='true']) {
+  border-color: rgba(238, 234, 226, 0.6);
+}
+
+.biz__arrow[aria-disabled='true'] {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.biz__dots {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* small dots with a finger-sized hit area */
+.biz__dots button {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.biz__dots button::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: rgba(238, 234, 226, 0.3);
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.biz__dots button[aria-current]::before {
+  background: var(--accent);
+  transform: scale(1.4);
+}
+
+/* ==========================================================================
+   Desktop: exactly one view; details left, photos right
+   ========================================================================== */
+
+@media (min-width: 900.02px) {
+  .biz {
+    --logo-h: clamp(40px, 7vh, 68px);
+    --gutter: max(1.5rem, var(--space-edge));
+    /* tall enough to feel like a scene, with clear space above and below */
+    --card-h: min(46rem, 100svh - 12rem);
+
+    height: 100svh;
+    min-height: 40rem;
+    padding-block: 0;
+  }
+
+  .biz__card {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    min-height: var(--card-h);
+  }
+
+  .biz__info {
+    align-self: center;
+    padding: clamp(1.25rem, 3.6vh, 2.75rem) clamp(1.5rem, 2.6vw, 3rem);
+  }
+
+  .biz__title {
+    font-size: clamp(2rem, 3.2vw, 3.25rem);
+  }
+
+  /* fills the card's full height on its side */
+  .biz__photos {
+    order: 0;
+    height: auto;
+    padding: var(--photo-gap);
+  }
+}
+
+/* wide screens: room at the sides, so the next card peeks in by 3rem */
+@media (min-width: 1280px) {
+  .biz {
+    --gutter: 5rem;
+    --peek: 3rem;
+  }
+}
+
+/* ==========================================================================
+   Small screens
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .biz__btn {
+    flex: 1 1 auto;
+    padding-inline: 1rem;
+  }
+
+  .biz__empty-label,
+  .biz__empty-note {
+    white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   Reduced motion: no drift, instant card changes
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .biz__bg-img,
+  .biz__photo:first-child img {
+    animation: none;
+  }
+
+  .biz__bg-img,
+  .biz__photo img,
+  .biz__track,
+  .biz__slide,
+  .biz__arrow,
+  .biz__btn,
+  .biz__btn--primary::before,
+  .biz__dots button::before {
+    transition: none;
+  }
+
+  .biz__embers {
+    display: none;
+  }
+}

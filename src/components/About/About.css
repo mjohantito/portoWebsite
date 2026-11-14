@@ -1,0 +1,266 @@
+/* ==========================================================================
+   About
+   Two calm columns: photo card left, text stack right. Stacks below 900px.
+
+   The source photo has a dark studio background (no transparency), so it is
+   cropped inside the card rather than breaking out of its top edge. The asset
+   is pre-cropped to head-and-torso at the parallax layer's exact ratio
+   (scripts/generate-images.mjs); the face spans y 0.09-0.47 of it.
+   ========================================================================== */
+
+.about {
+  padding: clamp(6rem, 18vh, 13rem) var(--space-edge);
+  overflow-x: clip; /* the spotlight glow is wider than the card */
+  background: var(--color-bg);
+}
+
+.about__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 26rem) minmax(0, 33rem);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(3rem, 8vw, 7.5rem);
+  max-width: 76rem;
+  margin: 0 auto;
+}
+
+/* ---------- Photo card ----------
+   Layers, outside in. Each animated property has its own element:
+   media (exit drift) > tilt (pointer) > card (light-up) > photo-mask (iris)
+   > photo (dolly + exit dim) > img (entrance scale). */
+
+.about__media {
+  position: relative;
+}
+
+/* the "spotlight": a soft pool of light behind and around the card */
+.about__spot {
+  position: absolute;
+  inset: -30% -40%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 255, 255, 0.075),
+    rgba(255, 255, 255, 0.025) 50%,
+    transparent 80%
+  );
+  pointer-events: none;
+}
+
+.about__tilt {
+  position: relative;
+}
+
+.about__card {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid var(--color-surface-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+/* "lighten" lifts the photo's black backdrop to the card surface, so the
+   figure reads as standing on the card rather than in a darker rectangle.
+   It has to sit on the outermost photo layer to blend with the card. */
+.about__photo-mask {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: lighten;
+}
+
+/* Dolly layer: a little taller than the card so its travel never shows an edge. */
+.about__photo {
+  position: absolute;
+  inset: -4% 0;
+}
+
+.about__photo picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.about__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+  filter: grayscale(1);
+}
+
+/* pointer highlight: follows the cursor across the card (fine pointers only) */
+.about__glare {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  margin: -75% 0 0 -75%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.11), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* one-off light sweep: a soft band across the face, a bright one along the border */
+.about__sheen,
+.about__edge-light {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.about__sheen {
+  z-index: 2;
+  background: linear-gradient(105deg, transparent 36%, rgba(255, 255, 255, 0.06) 50%, transparent 64%);
+}
+
+/* a 1px ring that only shows its child through the card's border */
+.about__edge {
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  overflow: hidden;
+  border-radius: 20px;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.about__edge-light {
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.9) 50%, transparent 70%);
+}
+
+/* bottom edge of the photo dissolves into the card */
+.about__card::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 24%;
+  z-index: 1;
+  background: linear-gradient(to top, var(--color-surface), transparent);
+  pointer-events: none;
+}
+
+/* ---------- Text stack ---------- */
+
+.about__intro {
+  margin: 0 0 1.25rem;
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.about__headline {
+  margin: 0 0 1.75rem;
+  font-family: var(--font-body);
+  font-size: clamp(2rem, 3.7vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--color-text);
+}
+
+.about__headline-visual {
+  display: block;
+}
+
+/* line masks exist only during the reveal: leave room for descenders */
+.about__line-mask {
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+.about__accent {
+  color: var(--color-accent);
+}
+
+.about__body {
+  max-width: 33rem; /* ~68 characters at 16px */
+  margin: 0 0 1.1rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-muted);
+  text-wrap: pretty;
+}
+
+.about__socials {
+  display: flex;
+  gap: 0.75rem;
+  margin: 2.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about__socials a {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  color: var(--color-text);
+  transition:
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.about__socials a:hover,
+.about__socials a:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ---------- Stacked ---------- */
+
+/* ---------- Desktop: one full view, content centred ---------- */
+
+@media (min-width: 900.02px) {
+  .about {
+    display: grid;
+    align-items: center;
+    min-height: 100svh;
+    /* tighter than the stacked layout so the section still fits short windows */
+    padding-block: clamp(3rem, 8vh, 13rem);
+  }
+
+  .about__inner {
+    width: 100%;
+  }
+
+  /* the 4:5 card never grows past the viewport */
+  .about__media {
+    width: min(100%, (100svh - 7rem) * 0.8);
+    justify-self: end;
+  }
+}
+
+@media (max-width: 900px) {
+  .about__inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.75rem;
+    max-width: 33rem;
+  }
+
+  /* width is capped so the 4:5 card never exceeds 70% of the viewport height,
+     which also keeps the face inside the crop on short, wide screens */
+  .about__media {
+    width: min(100%, 26rem, 70svh * 0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about__socials a {
+    transition: none;
+  }
+}

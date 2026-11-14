@@ -1,0 +1,474 @@
+/* ==========================================================================
+   Contact
+   A two-typeface heading, then the form on the left and three link cards on
+   the right, with one very large dim word behind and below the cards.
+
+   Desktop: one full view. Below 900px: heading, cards (a swipe row), form.
+   Card hover states are driven by a data-state the component sets for mouse
+   hover and keyboard focus only, so touch screens never get a stuck hover.
+   ========================================================================== */
+
+.contact {
+  position: relative;
+  display: grid;
+  gap: 3rem;
+  padding: 5rem var(--space-edge) 5.5rem;
+  overflow-x: clip; /* the big word can be wider than a phone */
+  background: var(--color-bg);
+}
+
+/* ---------- Heading: mono + italic serif ---------- */
+
+.contact__heading {
+  margin: 0;
+  font-size: clamp(3rem, 15vw, 5rem);
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.contact__mono {
+  font-family: var(--font-mono);
+  letter-spacing: -0.05em;
+}
+
+.contact__serif {
+  display: inline-block;
+  font-family: var(--font-quote);
+  font-size: 1.12em;
+  font-style: italic;
+}
+
+.contact__char-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  /* room for the glyphs so the mask only clips the reveal */
+  padding-block: 0.1em;
+  margin-block: -0.1em;
+}
+
+.contact__char {
+  display: inline-block;
+}
+
+/* ---------- Body ---------- */
+
+.contact__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+  min-width: 0;
+}
+
+/* ---------- Form: small labels, underlined fields ---------- */
+
+.contact__form {
+  display: grid;
+  gap: 0.35rem;
+  order: 2; /* small screens: cards first, then the form */
+  width: 100%;
+}
+
+.contact__field {
+  display: grid;
+}
+
+.contact__field label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color 0.3s ease;
+}
+
+.contact__field:focus-within label {
+  color: var(--color-text);
+}
+
+.contact__field input,
+.contact__field textarea {
+  width: 100%;
+  padding: 0.6rem 0 0.7rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  caret-color: var(--color-accent);
+}
+
+.contact__field textarea {
+  display: block;
+  resize: none;
+  /* a long message scrolls here without dragging the page along */
+  overscroll-behavior: contain;
+}
+
+/* the underline below is the focus indicator */
+.contact__field input:focus,
+.contact__field textarea:focus {
+  outline: none;
+}
+
+.contact__field input:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-text);
+  box-shadow: 0 0 0 100vmax var(--color-bg) inset;
+}
+
+/* hairline at rest; an amber line wipes across it on focus */
+.contact__line {
+  position: relative;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.22);
+  transform-origin: 0 50%;
+}
+
+.contact__line::after {
+  content: '';
+  position: absolute;
+  inset: -0.5px 0;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+.contact__field:focus-within .contact__line::after {
+  transform: scaleX(1);
+}
+
+.contact__field[data-invalid] .contact__line {
+  background: var(--color-error);
+}
+
+/* always takes its line of space, so an error never shifts the layout */
+.contact__error {
+  min-height: 1.45rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-error);
+}
+
+.contact__botcheck {
+  display: none;
+}
+
+/* the field is the magnet's catch area, slightly larger than the button */
+.contact__submit-field {
+  margin: 0.1rem -0.75rem -0.75rem;
+  padding: 0.75rem;
+}
+
+.contact__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  will-change: transform;
+}
+
+.contact__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.contact__submit:focus-visible {
+  outline-color: var(--color-text);
+}
+
+.contact__failure {
+  margin: 0.9rem 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-error);
+}
+
+.contact__failure a {
+  color: var(--color-text);
+  text-underline-offset: 0.2em;
+}
+
+/* ---------- Cards + the big word ---------- */
+
+.contact__find {
+  position: relative;
+  container-type: inline-size;
+  min-width: 0;
+}
+
+/* One line tall; the words are stacked in it and roll through behind this mask. */
+.contact__word {
+  position: absolute;
+  z-index: 0;
+  top: 34%;
+  right: 0;
+  left: 0;
+  height: 1em;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 30vw;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.075);
+  pointer-events: none;
+  user-select: none;
+}
+
+.contact__word-item {
+  position: absolute;
+  inset: 0;
+  transform: translateY(105%);
+  transition: transform 0.7s var(--ease-out-expo);
+}
+
+.contact__word-item[data-state='before'] {
+  transform: translateY(-105%);
+}
+
+.contact__word-item[data-state='active'] {
+  transform: none;
+}
+
+/* small screens: a swipe row that bleeds to the screen edges */
+.contact__cards {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 1rem;
+  margin: 0 calc(var(--space-edge) * -1);
+  padding: 0.5rem var(--space-edge);
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--space-edge);
+  scrollbar-width: none;
+}
+
+.contact__cards::-webkit-scrollbar {
+  display: none;
+}
+
+.contact__item {
+  flex: 0 0 64%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+/* Dimming is on the card and its label, not on the <li>: the <li> is what the
+   entrance fades in, and a CSS transition there would drag behind it. */
+.contact__item[data-state='dim'] :is(.contact__card, .contact__card-label) {
+  opacity: 0.5;
+}
+
+.contact__card {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--color-surface);
+  transition:
+    transform 0.6s var(--ease-out-expo),
+    opacity 0.5s ease;
+}
+
+.contact__card picture,
+.contact__card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.contact__card img {
+  object-fit: cover;
+}
+
+/* a veil of night over the photo; it thins when the card is active. The
+   hairline keeps a dark photo's edge visible against the page. */
+.contact__card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: inherit;
+  background: rgba(5, 5, 5, 0.3);
+  transition: opacity 0.5s ease;
+}
+
+.contact__item[data-state='active'] .contact__card {
+  transform: translateY(-0.5rem) scale(1.03);
+}
+
+.contact__item[data-state='active'] .contact__card::after {
+  opacity: 0.25;
+}
+
+/* platform badge, centred on the image */
+.contact__badge {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-width: 56px;
+  height: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(13, 13, 15, 0.64);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  translate: -50% -50%;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+.contact__badge svg {
+  width: 22px;
+  height: 22px;
+}
+
+.contact__badge--text {
+  padding: 0 1.15rem 0 0.95rem;
+}
+
+.contact__badge--text svg {
+  width: 17px;
+  height: 17px;
+}
+
+.contact__item[data-state='active'] .contact__badge {
+  transform: scale(1.1);
+}
+
+.contact__card-label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.75rem;
+  margin: 0.9rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  transition:
+    color 0.4s ease,
+    opacity 0.5s ease;
+}
+
+.contact__card-handle {
+  text-transform: none;
+}
+
+.contact__item[data-state='active'] .contact__card-label {
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   Desktop: one full view, form left, cards right
+   ========================================================================== */
+
+@media (min-width: 900.02px) {
+  .contact {
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(1.25rem, 4.5vh, 4rem);
+    min-height: 100svh;
+    padding-block: clamp(2rem, 6.5vh, 6rem) clamp(1.75rem, 5vh, 5rem);
+  }
+
+  .contact__heading {
+    font-size: min(8.4vw, 14vh, 8.5rem);
+  }
+
+  /* slightly tighter fields, so the form also fits a short laptop window */
+  .contact__field input,
+  .contact__field textarea {
+    padding-block: clamp(0.3rem, 1.1vh, 0.6rem) clamp(0.4rem, 1.2vh, 0.7rem);
+  }
+
+  .contact__error {
+    min-height: 1.25rem;
+    margin-top: 0.2rem;
+  }
+
+  .contact__body {
+    display: grid;
+    grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
+    align-items: center;
+    gap: clamp(2rem, 6vw, 6rem);
+    width: 100%;
+    max-width: 84rem;
+    margin: 0 auto;
+  }
+
+  .contact__form {
+    order: 0;
+    justify-self: center;
+    max-width: 21rem;
+  }
+
+  /* card height follows the viewport, so the section stays one view tall */
+  .contact__find {
+    justify-self: center;
+    width: 100%;
+    max-width: max(22rem, (100svh - 27rem) * 2.4 + 3rem);
+    /* room below the cards for the lower half of the word */
+    padding-bottom: clamp(1.5rem, 5vh, 3.5rem);
+  }
+
+  .contact__cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  /* The word's top 42% is tucked behind the cards: it sits 0.58em below the
+     cards' bottom edge (the labels under them are 2.2rem tall). */
+  .contact__word {
+    top: auto;
+    bottom: calc(clamp(1.5rem, 5vh, 3.5rem) + 2.2rem - 0.58em);
+    font-size: clamp(4rem, 11vw, 10rem);
+    font-size: clamp(4rem, 21cqi, 11rem);
+  }
+}
+
+/* ==========================================================================
+   Reduced motion: instant swaps
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .contact__word-item,
+  .contact__card,
+  .contact__card::after,
+  .contact__badge,
+  .contact__card-label,
+  .contact__line::after,
+  .contact__field label {
+    transition: none;
+  }
+}

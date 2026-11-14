@@ -1,0 +1,45 @@
+/* ==========================================================================
+   Page transitions (see transition.ts)
+   One layer above everything while a transition runs. It also catches every
+   pointer, so nothing underneath can be clicked or dragged meanwhile.
+   ========================================================================== */
+
+.route-layer {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* wipe: a panel a shade lighter than the page, with a hairline edge */
+.route-layer__panel {
+  position: absolute;
+  inset: 0;
+  background: #0d0d0f;
+  box-shadow: 0 0 0 1px var(--color-surface-border);
+  will-change: transform;
+}
+
+/* reduced motion: the page colour */
+.route-layer__fade {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+}
+
+/* zoom: the photo at screen-covering size; a clip-path picks the window it
+   shows through, a transform moves the picture behind it */
+.route-layer__photo {
+  position: absolute;
+  inset: 0;
+  will-change: clip-path, opacity;
+}
+
+.route-layer__photo img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  will-change: transform;
+}
