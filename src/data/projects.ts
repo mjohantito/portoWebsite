@@ -16,6 +16,8 @@
  * Empty strings (year, role) and a missing `stats` are simply not rendered.
  * A type of "Event" gets a landscape frame; a type containing "iOS" gets the
  * phone-shaped frame. `placeholder: true` adds the "COMING SOON" tag.
+ * `detailsUrl` (optional) adds a "Read more" button that opens that page; the
+ * page itself must also be registered in src/App.tsx.
  */
 import { photosIn, type Photo } from './photos'
 
@@ -34,6 +36,8 @@ export interface Project {
   placeholder: boolean
   /** true keeps the project out of the page entirely */
   hidden?: boolean
+  /** optional: a case-study page; adds a "Read more" button to the project */
+  detailsUrl?: string
 }
 
 export const PROJECTS: Project[] = [
@@ -47,6 +51,7 @@ export const PROJECTS: Project[] = [
       'A three-day national youth conference. I led the ideation, planning, and preparation.',
     stats: ['1,316 participants', '115 committee members', '3 days'],
     placeholder: false,
+    detailsUrl: '/projects/ibyc-2023',
   },
   {
     slug: 'xray',

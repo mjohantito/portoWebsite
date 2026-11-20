@@ -1,5 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { VISIBLE_PROJECTS, photosOf } from '../../data/projects'
+import { projectPhotoKey } from '../../transition/routes'
 import TransitionLink from '../../transition/TransitionLink'
 import ProjectMedia, { SoonCard } from './ProjectMedia'
 import { useWorkMotion } from './useWorkMotion'
@@ -30,6 +31,23 @@ function Title({ text }: { text: string }) {
   ))
 }
 
+/**
+ * The primary action of a project with a case study. One copy sits in each
+ * project card (small screens, reduced motion) and one in the left panel
+ * (desktop); CSS shows the one that belongs to the layout.
+ */
+function ReadMore({ to, place }: { to: string; place: 'card' | 'panel' }) {
+  return (
+    <TransitionLink className={`work__more work__more--${place}`} to={to}>
+      <span className="work__more-long">Read more about this project</span>
+      <span className="work__more-short">Read more</span>
+      <span className="work__more-arrow" aria-hidden="true">
+        &rarr;
+      </span>
+    </TransitionLink>
+  )
+}
+
 /** One hairline per panel, drawn as SVG so it can be traced on entry. */
 function PanelBorder() {
   return (
@@ -56,6 +74,9 @@ export default function Work() {
   const [pinned, setPinned] = useState(false)
   const [live, setLive] = useState(false)
 
+  // undefined on the coming-soon slot
+  const activeProject = PROJECTS[active] as (typeof PROJECTS)[number] | undefined
+
   const go = useWorkMotion(rootRef, STOPS, { setActive, setEntered, setPinned, setLive })
 
   // a peek image stops being a button once its project is active, so hand
@@ -76,7 +97,7 @@ export default function Work() {
       data-entered={entered}
       data-snap
     >
-      <div className="work__pin" data-work-pin>
+      <div className="work__pin" data-work-pin data-fall-root>
         <div className="work__panel work__panel--left" data-work-panel aria-hidden="true">
           <PanelBorder />
         </div>
@@ -180,6 +201,8 @@ export default function Work() {
                       </div>
                     </div>
                   )}
+
+                  {project.detailsUrl && <ReadMore to={project.detailsUrl} place="card" />}
                 </div>
 
                 <div className="work__stage" data-work-stage>
@@ -199,6 +222,7 @@ export default function Work() {
                       photos={project.photos}
                       phone={project.phone}
                       cycling={pinned && live && i === active}
+                      sharedKey={project.detailsUrl ? projectPhotoKey(project.slug) : undefined}
                     />
                     {/* the peeking neighbours are buttons that jump to their project */}
                     <button
@@ -247,12 +271,18 @@ export default function Work() {
           </div>
         </div>
 
-        <TransitionLink className="work__all" to="/work">
-          View all work
-          <span className="work__all-arrow" aria-hidden="true">
-            &rarr;
-          </span>
-        </TransitionLink>
+        {/* desktop: the active project's case study (if any), then all work */}
+        <div className="work__actions">
+          {activeProject?.detailsUrl && (
+            <ReadMore key={activeProject.slug} to={activeProject.detailsUrl} place="panel" />
+          )}
+          <TransitionLink className="work__all" to="/work">
+            View all work
+            <span className="work__all-arrow" aria-hidden="true">
+              &rarr;
+            </span>
+          </TransitionLink>
+        </div>
 
         <p className="work__label work__label--bl" aria-hidden="true">
           Scroll

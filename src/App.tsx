@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import BusinessPage from './pages/BusinessPage'
 import Home from './pages/Home'
 import Placeholder from './pages/Placeholder'
+import ProjectIbyc from './pages/ProjectIbyc'
+import { ibyc2023 } from './content/ibyc-2023'
 import RouteTransitions from './transition/RouteTransitions'
 
 /*
@@ -22,6 +24,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/business/:slug" element={<BusinessPage />} />
+        <Route path={ibyc2023.path} element={<ProjectIbyc />} />
         <Route path="/work" element={<Placeholder title="All work" section="work" />} />
         <Route path="/about" element={<Placeholder title="More about me" section="about" />} />
         <Route path="*" element={<Navigate to="/" replace />} />

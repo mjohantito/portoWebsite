@@ -21,11 +21,14 @@ export default function ProjectMedia({
   photos,
   phone,
   cycling,
+  sharedKey,
 }: {
   title: string
   photos: Photo[]
   phone: boolean
   cycling: boolean
+  /** names this frame for the page transition to the project's case study */
+  sharedKey?: string
 }) {
   const [failed, setFailed] = useState<string[]>([])
   const [turn, setTurn] = useState(0)
@@ -104,7 +107,10 @@ export default function ProjectMedia({
         <span className="work__glow work__glow--amber" aria-hidden="true" data-work-glow />
       )}
 
-      <div className={`work__frame${phone ? ' work__frame--phone' : ''}`}>
+      <div
+        className={`work__frame${phone ? ' work__frame--phone' : ''}`}
+        data-shared={images.length > 0 ? sharedKey : undefined}
+      >
         {phone ? (
           <div className="work__phone">
             <div className="work__screen">{content}</div>

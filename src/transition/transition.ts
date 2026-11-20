@@ -192,6 +192,7 @@ function begin(plan: Plan): Run {
     dead: false,
   }
   run = r
+  document.documentElement.dataset.routeTransition = ''
   setScrollLocked(true)
   return r
 }
@@ -205,6 +206,7 @@ function finish(r: Run) {
   r.layer.remove()
   GUARDED.forEach((type) => window.removeEventListener(type, swallow, { capture: true }))
   if (run === r) run = null
+  delete document.documentElement.dataset.routeTransition
   setScrollLocked(false)
   // let go of anything still waiting on this run
   ;[...r.waiting].forEach((done) => done())
@@ -232,6 +234,12 @@ function planFor(from: string, to: string): Plan {
 
 const sharedFigure = (key: string) => document.querySelector<HTMLElement>(`[data-shared="${key}"]`)
 
+/** The picture a shared figure is showing: with several (a cycling card), the one on show. */
+const shownImage = (figure: HTMLElement | null | undefined) =>
+  figure?.querySelector<HTMLImageElement>('img.is-shown') ??
+  figure?.querySelector<HTMLImageElement>('img') ??
+  null
+
 const FULL_SCREEN = 'inset(0px 0px 0px 0px round 0px)'
 
 /**
@@ -239,12 +247,13 @@ const FULL_SCREEN = 'inset(0px 0px 0px 0px round 0px)'
  * screen. It is never resized: a clip-path chooses the window through which it
  * shows, and a transform moves and scales the picture behind that window.
  */
-function makeClone(r: Run, photo: Photo, src: string | null): Clone {
+function makeClone(r: Run, photo: Photo, shown: HTMLImageElement | null): Clone {
   const wrap = document.createElement('div')
   wrap.className = 'route-layer__photo'
   const img = document.createElement('img')
   img.alt = ''
   img.decoding = 'sync'
+  const src = shown?.currentSrc
   if (src) {
     img.src = src // the file the page is already showing
   } else {
@@ -255,7 +264,12 @@ function makeClone(r: Run, photo: Photo, src: string | null): Clone {
 
   const vw = window.innerWidth
   const vh = window.innerHeight
-  const ratio = photo.width / photo.height
+  // the shape of the picture actually on show (a card that cycles may be on
+  // another photo than the one the next page opens with)
+  const ratio =
+    shown?.naturalWidth && shown.naturalHeight
+      ? shown.naturalWidth / shown.naturalHeight
+      : photo.width / photo.height
   const width = Math.max(vw, vh * ratio)
   const height = width / ratio
   Object.assign(img.style, {
@@ -292,7 +306,7 @@ function placeOver(figure: HTMLElement, clone: Clone) {
   const frame = figure.getBoundingClientRect()
   // the picture is drawn to cover its <img> box, which may be larger than the
   // frame (it drifts and scales slightly inside it)
-  const box = (figure.querySelector('img') ?? figure).getBoundingClientRect()
+  const box = (shownImage(figure) ?? figure).getBoundingClientRect()
   const pictureWidth = Math.max(box.width, box.height * clone.ratio)
   const radius = parseFloat(getComputedStyle(figure).borderTopLeftRadius) || 0
 
@@ -309,19 +323,26 @@ function placeOver(figure: HTMLElement, clone: Clone) {
 /** Hides the page's own copy of the photo while the clone stands in for it. */
 function standInFor(r: Run, figure: HTMLElement) {
   figure.style.visibility = 'hidden'
-  r.cleanups.push(() => {
+  const show = () => {
     figure.style.visibility = ''
-  })
+  }
+  r.cleanups.push(show)
+  return show
 }
 
 /**
  * What gets scaled when a section falls back: its contents, never the section
  * itself. The section's own box is what the scroll system measures, and that
  * can happen at any moment (an image finishing loading triggers it).
+ *
+ * A section with a pinned (position: fixed) element marks it [data-fall-root]:
+ * scaling anything around a fixed element would move it, so its children are
+ * scaled instead.
  */
-const contentsOf = (section: Element) => Array.from(section.children)
+const contentsOf = (section: Element) =>
+  Array.from((section.querySelector('[data-fall-root]') ?? section).children)
 
-/* ---------- home -> business page: the photo grows to fill the screen ---------- */
+/* ---------- home -> detail page: the photo grows to fill the screen ---------- */
 
 async function zoomIn(r: Run, plan: Extract<Plan, { kind: 'zoom' }>, origin: HTMLElement | null) {
   const figure = sharedFigure(plan.key)
@@ -331,7 +352,7 @@ async function zoomIn(r: Run, plan: Extract<Plan, { kind: 'zoom' }>, origin: HTM
     return wipeIn(r, false, origin)
   }
 
-  const clone = makeClone(r, plan.photo, figure.querySelector('img')?.currentSrc || null)
+  const clone = makeClone(r, plan.photo, shownImage(figure))
   const start = placeOver(figure, clone)
   r.context.add(() => {
     gsap.set(clone.wrap, { clipPath: start.clip })
@@ -358,20 +379,20 @@ async function zoomIn(r: Run, plan: Extract<Plan, { kind: 'zoom' }>, origin: HTM
   )
 }
 
-/** On the business page: its top visual is the same photo, so the clone just dissolves. */
+/** On the detail page: its top visual is the same photo, so the clone just dissolves. */
 async function zoomInReveal(r: Run, plan: Extract<Plan, { kind: 'zoom' }>) {
   const clone = r.clone
   if (!clone) return
-  await decoded(r, sharedFigure(plan.key)?.querySelector('img'), 1200)
+  await decoded(r, shownImage(sharedFigure(plan.key)), 1200)
   if (r.dead) return
   await played(r, () => gsap.to(clone.wrap, { opacity: 0, duration: 0.45, ease: 'power1.out' }))
 }
 
-/* ---------- business page -> home: the photo shrinks back onto the card ---------- */
+/* ---------- detail page -> home: the photo shrinks back onto the card ---------- */
 
 async function zoomOutCover(r: Run, plan: Extract<Plan, { kind: 'zoom' }>, instant: boolean) {
-  const shown = instant ? null : sharedFigure(plan.key)?.querySelector('img')
-  const clone = makeClone(r, plan.photo, shown?.currentSrc || null)
+  const shown = instant ? null : shownImage(sharedFigure(plan.key))
+  const clone = makeClone(r, plan.photo, shown)
   r.context.add(() => gsap.set(clone.wrap, { clipPath: FULL_SCREEN }))
   if (instant) {
     // nothing may show through while the picture is being decoded
@@ -403,7 +424,7 @@ async function zoomOutReveal(r: Run, plan: Extract<Plan, { kind: 'zoom' }>) {
   }
 
   const end = placeOver(figure, clone)
-  standInFor(r, figure)
+  const showFigure = standInFor(r, figure)
   await played(r, () =>
     gsap
       .timeline({ defaults: { duration: ZOOM, ease: 'power3.inOut' } })
@@ -412,8 +433,12 @@ async function zoomOutReveal(r: Run, plan: Extract<Plan, { kind: 'zoom' }>) {
       .to(clone.wrap, { clipPath: end.clip }, 0)
       .to(clone.img, end.picture, 0),
   )
-  // hand over to the card's own photo once it can be painted
-  await decoded(r, figure.querySelector('img'), 800)
+  // hand over to the card's own photo once it can be painted. The two can
+  // differ (a page hero that is not the card's photo), so crossfade.
+  await decoded(r, shownImage(figure), 800)
+  if (r.dead) return
+  showFigure()
+  await played(r, () => gsap.to(clone.wrap, { opacity: 0, duration: 0.3, ease: 'power1.out' }))
 }
 
 /* ==========================================================================

@@ -55,6 +55,32 @@ export function goToStop(id: string, fallbackY: number) {
 }
 
 /**
+ * Smooth scrolling for a long page other than the home page: Lenis only, no
+ * section snapping, and nothing remembered. Reduced motion scrolls natively.
+ * Page transitions can lock it like the home page's (setScrollLocked).
+ */
+export function usePageScroll() {
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const instance = new Lenis()
+    lenis = instance
+    const onScroll = () => ScrollTrigger.update()
+    instance.on('scroll', onScroll)
+    const raf = (time: number) => instance.raf(time * 1000)
+    gsap.ticker.add(raf)
+    gsap.ticker.lagSmoothing(0)
+
+    return () => {
+      gsap.ticker.remove(raf)
+      instance.off('scroll', onScroll)
+      instance.destroy()
+      if (lenis === instance) lenis = null
+    }
+  }, [])
+}
+
+/**
  * Scrolling for the home page. Three modes:
  *   - desktop / tablet: Lenis + section snapping (see scroll/snap.ts)
  *   - touch devices below 900px: Lenis without snapping (normal smooth scroll)
@@ -169,7 +195,7 @@ export function useSmoothScroll(
       gsap.ticker.remove(raf)
       instance.off('scroll', onScroll)
       instance.destroy()
-      lenis = null
+      if (lenis === instance) lenis = null
     }
   }, [root, startAt, startY])
 
